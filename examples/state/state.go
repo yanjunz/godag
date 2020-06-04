@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"git.code.oa.com/yjzhuang/dag"
+	"git.code.oa.com/video-fdmc/godag"
 )
 
 type StateOp struct {
@@ -15,7 +15,7 @@ type StateOp struct {
 
 func (o *StateOp) Process(ctx context.Context, input ...interface{}) interface{} {
 	id := "start"
-	idVal := ctx.Value(dag.StateKey("id"))
+	idVal := ctx.Value(godag.StateKey("id"))
 	if idVal != nil {
 		id = idVal.(string)
 	}
@@ -29,19 +29,19 @@ func (o *StateOp) Process(ctx context.Context, input ...interface{}) interface{}
 			output = output + "(" + param.(string) + ")"
 		}
 	}
-	output = output +  "[" + id + "> " + o.data + "]"
+	output = output +  "[" + id + ">" + o.data + "]"
 	return output
 }
 
 func main() {
-	start := dag.NewStartNode("start")
+	start := godag.NewStartNode("start")
 	op1 := start.AddNext("op1", &StateOp{data: "op1_data", processTime: 1 * time.Second})
 	op2 := start.AddNext("op2", &StateOp{data: "op2_data", processTime: 2 * time.Second})
 	op3 := op1.AddNext("op3", &StateOp{data: "op3_data", processTime: 3 * time.Second})
 	op4 := op3.AddNext("op4", &StateOp{data: "op4_data", processTime: 4 * time.Second})
 	op2.AddNextNode(op4)
 
-	var dag dag.DAG
+	var dag godag.DAG
 	dag.Init(start, nil)
 	startTime := time.Now()
 	fmt.Println(startTime, "start")

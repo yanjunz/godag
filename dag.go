@@ -1,31 +1,60 @@
-package main
+package dag
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
+	// "fmt"
 )
 
 type Op interface {
-	Process(ctx context.Context, input interface{}) interface{}
+	Process(ctx context.Context, input ...interface{}) interface{}	// pass input with the order of prev
 }
 
+type StateKeeper interface {
+	SetInput(id string, input interface{})				// set the input of "id" 
+	GetInput(id string, fromID string) interface{} 		// get the input of "id" from "fromID"
+	SetOutput(id string, output interface{})			// set the output of "id"
+}
+
+type DefaultStateKeeper struct {
+	state map[string]interface{}
+}
+
+func (sk *DefaultStateKeeper) SetInput(id string, input interface{}) {
+	sk.state[id] = input
+}
+
+func (sk *DefaultStateKeeper) GetInput(id string, fromID string) interface {} {
+	return sk.state[id]
+}
+
+func (sk *DefaultStateKeeper) SetOutput(id string, output interface{}) {
+	sk.state[id] = output
+}
+
+type StateKey string
+
 type Node struct {
-	name       string
+	id         string	// id should be unique
 	op         Op
 	prev       []*Node
 	next       []*Node
 	timeout    time.Duration
 	isCanceled bool
-	mu         sync.Mutex
 	indegree   int
 	costTime   time.Duration
 }
 
-func (n *Node) AddNext(name string, op Op) *Node {
+func NewStartNode(id string) *Node {
+	return &Node{
+		id: id,
+	}
+}
+
+func (n *Node) AddNext(id string, op Op) *Node {
 	newNode := Node{
-		name:     name,
+		id:     id,
 		op:       op,
 		prev:     []*Node{n},
 		indegree: 1,
@@ -43,20 +72,23 @@ func (n *Node) AddNextNode(node *Node) *Node {
 
 type DAG struct {
 	startNode *Node
-	// taskQueue *list.List
-	// queueLock sync.Mutex
 	mu        sync.Mutex
 	activeNum int
 	taskChan  chan *Node
 	doneChan  chan struct{}
+	stateKeeper StateKeeper
 }
 
-func (p *DAG) Init(startNode *Node) bool {
+func (p *DAG) Init(startNode *Node, stateKeeper StateKeeper) bool {
 	p.startNode = startNode
+	if stateKeeper == nil {
+		p.stateKeeper = &DefaultStateKeeper{
+			state: make(map[string]interface{}),
+		}
+	} else {
+		p.stateKeeper = stateKeeper
+	}
 	p.activeNum = 1
-
-	// p.taskQueue = list.New()
-	// p.taskQueue.PushBack(startNode)
 	p.taskChan = make(chan *Node)
 	p.doneChan = make(chan struct{})
 	go func() {
@@ -88,7 +120,13 @@ func (p *DAG) ProcessNode(node *Node) {
 	startTime := time.Now()
 	go func() {
 		if node.op != nil {
-			node.op.Process(ctx, nil)
+			args := make([]interface{}, len(node.prev))
+			for idx := range node.prev {
+				args[idx] = p.stateKeeper.GetInput(node.prev[idx].id, node.id)
+			}
+			ctx = context.WithValue(ctx, StateKey("id"), node.id)
+			output := node.op.Process(ctx, args...)
+			p.stateKeeper.SetOutput(node.id, output)
 		}
 		close(doneChan) // close can make chan readable
 	}()
@@ -101,10 +139,10 @@ func (p *DAG) ProcessNode(node *Node) {
 	node.costTime = time.Now().Sub(startTime)
 	go func() {
 		for _, nextOne := range node.next {
-			nextOne.mu.Lock()
+			p.mu.Lock()
 			nextOne.indegree--
 			indegree := nextOne.indegree
-			nextOne.mu.Unlock()
+			p.mu.Unlock()
 			if indegree == 0 {
 				p.mu.Lock()
 				p.activeNum++ // should add before chan put
@@ -120,33 +158,4 @@ func (p *DAG) ProcessNode(node *Node) {
 			close(p.doneChan)
 		}
 	}()
-}
-
-type SimpleOp struct {
-	data        string
-	processTime time.Duration
-}
-
-func (o *SimpleOp) Process(ctx context.Context, input interface{}) interface{} {
-	fmt.Println(time.Now(), "Process begin", o.data, o.processTime)
-	time.Sleep(o.processTime)
-	fmt.Println(time.Now(), "Process done ", o.data, o.processTime)
-	return nil
-}
-
-func main() {
-	start := Node{name: "start"}
-	op1 := start.AddNext("op1", &SimpleOp{data: "op1_data", processTime: 1 * time.Second})
-	op2 := start.AddNext("op2", &SimpleOp{data: "op2_data", processTime: 2 * time.Second})
-	op3 := op1.AddNext("op3", &SimpleOp{data: "op3_data", processTime: 3 * time.Second})
-	op4 := op3.AddNext("op4", &SimpleOp{data: "op4_data", processTime: 4 * time.Second})
-	op2.AddNextNode(op4)
-
-	var dag DAG
-	dag.Init(&start)
-	startTime := time.Now()
-	fmt.Println(startTime, "start")
-	dag.Execute()
-	endTime := time.Now()
-	fmt.Println(endTime, "done", endTime.Sub(startTime))
 }

@@ -18,19 +18,25 @@ type StateKeeper interface {
 }
 
 type DefaultStateKeeper struct {
-	state map[string]interface{}
+	State map[string]interface{}
+}
+
+func NewDefaultStateKeeper() *DefaultStateKeeper {
+	return &DefaultStateKeeper{
+		State: make(map[string]interface{}),
+	}
 }
 
 func (sk *DefaultStateKeeper) SetInput(id string, input interface{}) {
-	sk.state[id] = input
+	sk.State[id] = input
 }
 
 func (sk *DefaultStateKeeper) GetInput(id string, fromID string) interface {} {
-	return sk.state[id]
+	return sk.State[id]
 }
 
 func (sk *DefaultStateKeeper) SetOutput(id string, output interface{}) {
-	sk.state[id] = output
+	sk.State[id] = output
 }
 
 type StateKey string
@@ -82,9 +88,7 @@ type DAG struct {
 func (p *DAG) Init(startNode *Node, stateKeeper StateKeeper) bool {
 	p.startNode = startNode
 	if stateKeeper == nil {
-		p.stateKeeper = &DefaultStateKeeper{
-			state: make(map[string]interface{}),
-		}
+		p.stateKeeper = NewDefaultStateKeeper()
 	} else {
 		p.stateKeeper = stateKeeper
 	}
@@ -101,14 +105,14 @@ func (p *DAG) Execute() {
 	for {
 		select {
 		case node := <-p.taskChan:
-			go p.ProcessNode(node)
+			go p.processNode(node)
 		case <-p.doneChan:
 			return
 		}
 	}
 }
 
-func (p *DAG) ProcessNode(node *Node) {
+func (p *DAG) processNode(node *Node) {
 	ctx := context.Background()
 	if node.timeout > 0 {
 		var cancel context.CancelFunc
@@ -158,4 +162,8 @@ func (p *DAG) ProcessNode(node *Node) {
 			close(p.doneChan)
 		}
 	}()
+}
+
+func (d *DAG) GetStateKeeper() StateKeeper {
+	return d.stateKeeper
 }

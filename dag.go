@@ -27,16 +27,16 @@ func NewDefaultStateKeeper() *DefaultStateKeeper {
 	}
 }
 
-func (sk *DefaultStateKeeper) SetInput(id string, input interface{}) {
-	sk.State[id] = input
+func (sk *DefaultStateKeeper) SetInput(curID string, input interface{}) {
+	sk.State[curID] = input
 }
 
-func (sk *DefaultStateKeeper) GetInput(id string, fromID string) interface {} {
-	return sk.State[id]
+func (sk *DefaultStateKeeper) GetInput(parentID string, curID string) interface {} {
+	return sk.State[parentID]
 }
 
-func (sk *DefaultStateKeeper) SetOutput(id string, output interface{}) {
-	sk.State[id] = output
+func (sk *DefaultStateKeeper) SetOutput(curID string, output interface{}) {
+	sk.State[curID] = output
 }
 
 type StateKey string
@@ -126,7 +126,7 @@ func (p *DAG) processNode(node *Node) {
 		if node.op != nil {
 			args := make([]interface{}, len(node.prev))
 			for idx := range node.prev {
-				args[idx] = p.stateKeeper.GetInput(node.prev[idx].id, node.id)
+				args[idx] = p.stateKeeper.GetInput(node.prev[idx].id, node.id) // will get the parent output as input of current
 			}
 			ctx = context.WithValue(ctx, StateKey("id"), node.id)
 			output := node.op.Process(ctx, args...)

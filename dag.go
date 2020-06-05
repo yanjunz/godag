@@ -11,13 +11,16 @@ type Op interface {
 	Process(ctx context.Context, input ...interface{}) interface{}	// pass input with the order of prev
 }
 
+// StateKeeper  transfer input/output for DAG
 type StateKeeper interface {
-	SetInput(id string, input interface{})				// set the input of "id" 
-	GetInput(id string, fromID string) interface{} 		// get the input of "id" from "fromID"
-	SetOutput(id string, output interface{})			// set the output of "id"
+	SetInput(curID string, input interface{})				// set the input of "curID" 
+	GetInput(parentID string, curID string) interface{} 	// get the input of "curID" generate by "parentID"
+	SetOutput(curID string, output interface{})				// set the output of "curID"
+	ClearAll()												// clear all
 }
 
 type DefaultStateKeeper struct {
+	mu    sync.Mutex
 	State map[string]interface{}
 }
 
@@ -28,18 +31,31 @@ func NewDefaultStateKeeper() *DefaultStateKeeper {
 }
 
 func (sk *DefaultStateKeeper) SetInput(curID string, input interface{}) {
+	sk.mu.Lock()
+	defer sk.mu.Unlock()
 	sk.State[curID] = input
 }
 
 func (sk *DefaultStateKeeper) GetInput(parentID string, curID string) interface {} {
+	sk.mu.Lock()
+	defer sk.mu.Unlock()
 	return sk.State[parentID]
 }
 
 func (sk *DefaultStateKeeper) SetOutput(curID string, output interface{}) {
+	sk.mu.Lock()
+	defer sk.mu.Unlock()
 	sk.State[curID] = output
 }
 
+func (sk *DefaultStateKeeper) ClearAll() {
+	sk.mu.Lock()
+	defer sk.mu.Unlock()
+	sk.State = make(map[string]interface{})
+}
+
 type StateKey string
+const NodeID = "__nodeID__"
 
 type Node struct {
 	id         string	// id should be unique
@@ -128,7 +144,7 @@ func (p *DAG) processNode(node *Node) {
 			for idx := range node.prev {
 				args[idx] = p.stateKeeper.GetInput(node.prev[idx].id, node.id) // will get the parent output as input of current
 			}
-			ctx = context.WithValue(ctx, StateKey("id"), node.id)
+			ctx = context.WithValue(ctx, StateKey(NodeID), node.id)
 			output := node.op.Process(ctx, args...)
 			p.stateKeeper.SetOutput(node.id, output)
 		}

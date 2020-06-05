@@ -15,7 +15,7 @@ type StateOp struct {
 
 func (o *StateOp) Process(ctx context.Context, input ...interface{}) interface{} {
 	id := "start"
-	idVal := ctx.Value(godag.StateKey("id"))
+	idVal := ctx.Value(godag.StateKey(godag.NodeID))
 	if idVal != nil {
 		id = idVal.(string)
 	}

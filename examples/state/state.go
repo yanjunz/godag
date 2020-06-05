@@ -13,7 +13,7 @@ type StateOp struct {
 	processTime time.Duration
 }
 
-func (o *StateOp) Process(ctx context.Context, input ...interface{}) interface{} {
+func (o *StateOp) Process(ctx context.Context, global interface{}, input ...interface{}) interface{} {
 	id := "start"
 	idVal := ctx.Value(godag.StateKey(godag.NodeID))
 	if idVal != nil {

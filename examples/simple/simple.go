@@ -13,7 +13,7 @@ type SimpleOp struct {
 	processTime time.Duration
 }
 
-func (o *SimpleOp) Process(ctx context.Context, input ...interface{}) interface{} {
+func (o *SimpleOp) Process(ctx context.Context, global interface{}, input ...interface{}) interface{} {
 	fmt.Println(time.Now(), "Process begin", o.data, o.processTime, input)
 	time.Sleep(o.processTime)
 	fmt.Println(time.Now(), "Process done ", o.data, o.processTime, input)

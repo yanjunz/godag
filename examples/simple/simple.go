@@ -32,7 +32,7 @@ func main() {
 	dag.Init(start, nil)
 	startTime := time.Now()
 	fmt.Println(startTime, "start")
-	dag.Execute()
+	dag.Execute(context.TODO())
 	endTime := time.Now()
 	fmt.Println(endTime, "done", endTime.Sub(startTime))
 }

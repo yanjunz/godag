@@ -149,19 +149,19 @@ func (p *DAG) Init(startNode *Node, stateKeeper StateKeeper) bool {
 	return true
 }
 
-func (p *DAG) Execute() {
+func (p *DAG) Execute(ctx context.Context) {
 	for {
 		select {
 		case node := <-p.taskChan:
-			go p.processNode(node)
+			go p.processNode(ctx, node)
 		case <-p.doneChan:
 			return
 		}
 	}
 }
 
-func (p *DAG) processNode(node *Node) {
-	ctx := context.Background()
+func (p *DAG) processNode(ctx context.Context, node *Node) {
+	// ctx := context.Background()
 	if node.timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, node.timeout)

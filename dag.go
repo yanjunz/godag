@@ -106,6 +106,11 @@ func NewStartNode(id string) *Node {
 	}
 }
 
+func (n *Node) WithTimeout(timeout time.Duration) *Node {
+	n.timeout = timeout
+	return n
+}
+
 func (n *Node) AddNext(id string, op Op) *Node {
 	newNode := Node{
 		id:       id,
@@ -166,6 +171,7 @@ func (p *DAG) processNode(ctx context.Context, node *Node) {
 	}
 	
 	if node.timeout > 0 {
+		// fmt.Println("node timeout = ", node.id, node.timeout)
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, node.timeout)
 		defer cancel()
@@ -186,12 +192,19 @@ func (p *DAG) processNode(ctx context.Context, node *Node) {
 		}
 		close(doneChan) // close can make chan readable
 	}()
-	select {
-	case <-ctx.Done():
-		node.isCanceled = true
-	case <-doneChan:
+	if node.timeout > 0 {
+		select {
+		case <-ctx.Done():
+			// fmt.Println("timeout", node, ctx)
+			node.isCanceled = true
+		case <-doneChan:
+			node.isCanceled = false
+		}
+	} else {
+		<- doneChan
 		node.isCanceled = false
 	}
+	
 	node.costTime = time.Now().Sub(startTime)
 	go func() {
 		for _, nextOne := range node.next {

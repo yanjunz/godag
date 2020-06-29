@@ -161,7 +161,10 @@ func (p *DAG) Execute(ctx context.Context) {
 }
 
 func (p *DAG) processNode(ctx context.Context, node *Node) {
-	// ctx := context.Background()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	
 	if node.timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, node.timeout)

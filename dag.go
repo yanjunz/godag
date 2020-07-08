@@ -188,7 +188,9 @@ func (p *DAG) processNode(ctx context.Context, node *Node) {
 			ctx = context.WithValue(ctx, StateKey(NodeID), node.id)
 			global := p.stateKeeper.GetGlobal()
 			output := node.op.Process(ctx, global, args...)
-			p.stateKeeper.SetOutput(node.id, output)
+			if !node.isCanceled { // if timeout, no need to save output
+				p.stateKeeper.SetOutput(node.id, output)
+			}
 		}
 		close(doneChan) // close can make chan readable
 	}()

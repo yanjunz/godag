@@ -213,11 +213,11 @@ func (p *DAG) processNode(ctx context.Context, node *Node) {
 			p.mu.Lock()
 			nextOne.indegree--
 			indegree := nextOne.indegree
+			if indegree == 0 {
+				p.activeNum++ // should add before chan put
+			}
 			p.mu.Unlock()
 			if indegree == 0 {
-				p.mu.Lock()
-				p.activeNum++ // should add before chan put
-				p.mu.Unlock()
 				p.taskChan <- nextOne
 			}
 		}

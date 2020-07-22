@@ -163,6 +163,18 @@ func (n *Node) InsertPrevNode(node *Node, after *Node) *Node {
 	return node
 }
 
+// FindPrev 从左到右查找Prev是否存在nodes中的任意一个，如果存在则返回最早匹配的node，否则nil
+func (n *Node) FindPrev(nodes... *Node) *Node {
+	for i := range n.prev {
+		for _, node := range nodes {
+			if node == n.prev[i] {
+				return node
+			}
+		}
+	}
+	return nil
+}
+
 type DAG struct {
 	startNode   *Node
 	mu          sync.Mutex

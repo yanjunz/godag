@@ -128,6 +128,13 @@ func (n *Node) AddNext(id string, op Op) *Node {
 }
 
 func (n *Node) AddNextNode(node *Node) *Node {
+	for i := range n.next {
+		if n.next[i] == node { // already added
+			// panic("already added")
+			return node
+		}
+	}
+	
 	n.next = append(n.next, node)
 	node.prev = append(node.prev, n)
 	node.indegree++

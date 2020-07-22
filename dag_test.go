@@ -150,3 +150,24 @@ func TestComplex(t *testing.T) {
 
 	assert.Equal(t, len(dag.GetStateKeeper().GetAllOutput()), 10)
 }
+
+func TestLeftJoin(t *testing.T) {
+	fmt.Println("TestComplex...")
+	start := NewStartNode("start")
+
+	ds1 := start.AddNext("ds1", &SimpleOp{data: "mock_aikan_play"})
+	ds2 := start.AddNext("ds2", &SimpleOp{data: "mock_aikan_insert"})
+	ds3 := start.AddNext("ds3", &SimpleOp{data: "mock_aikan_exposure"})
+	ds4 := start.AddNext("ds4", &SimpleOp{data: "mock_aikan_exposure2"})
+	ds_all_play := ds1.AddNext("ds_all_play", &SimpleOp{data: "ds_all_play"})
+	ds2.AddNextNode(ds_all_play)
+	// ds_left_join = SOP_left_join(ds4, ds_all_play, ds3)
+	// 由于在构造DAG的时候如果采用深度遍历可能会导致有顺序依赖的输入会按AddNext无法保证顺序，需要用InsertPrevNode的方式进行调整
+	ds_left_join := ds_all_play.AddNext("ds_left_join", &SimpleOp{data: "ds_left_join"})
+	ds3.AddNextNode(ds_left_join)
+	ds_left_join.InsertPrevNode(ds4, ds_all_play)
+
+	assert.Equal(t, ds_left_join.prev[0], ds4)
+	assert.Equal(t, ds_left_join.prev[1], ds_all_play)
+	assert.Equal(t, ds_left_join.prev[2], ds3)
+}

@@ -141,6 +141,28 @@ func (n *Node) AddNextNode(node *Node) *Node {
 	return node
 }
 
+// InsertPrevNode 将node插入prev数组中，位置在after的前面
+func (n *Node) InsertPrevNode(node *Node, after *Node) *Node {
+	idx := len(n.prev)
+	for i := range n.prev {
+		if n.prev[i] == node {
+			// panic("already added")
+			return node
+		} else if n.prev[i] == after {
+			idx = i
+		}
+	}
+
+	node.next = append(node.next, n)
+	if idx == len(n.prev) {
+		n.prev = append(n.prev, node)
+	} else {
+		n.prev = append(n.prev[:idx+1], n.prev[idx:]...)
+		n.prev[idx] = node
+	}
+	return node
+}
+
 type DAG struct {
 	startNode   *Node
 	mu          sync.Mutex
@@ -197,6 +219,7 @@ func (p *DAG) processNode(ctx context.Context, node *Node) {
 		if node.op != nil {
 			args := make([]interface{}, len(node.prev))
 			for idx := range node.prev {
+				// NOTE: the order of prev will result the order of args passed to op
 				args[idx] = p.stateKeeper.GetInput(node.prev[idx].id, node.id) // will get the parent output as input of current
 			}
 			ctx = context.WithValue(ctx, StateKey(NodeID), node.id)

@@ -160,6 +160,7 @@ func (n *Node) InsertPrevNode(node *Node, after *Node) *Node {
 		n.prev = append(n.prev[:idx+1], n.prev[idx:]...)
 		n.prev[idx] = node
 	}
+	n.indegree++
 	return node
 }
 

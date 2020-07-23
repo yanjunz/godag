@@ -167,6 +167,12 @@ func TestLeftJoin(t *testing.T) {
 	ds3.AddNextNode(ds_left_join)
 	ds_left_join.InsertPrevNode(ds4, ds_all_play)
 
+	assert.Equal(t, ds1.indegree, 1)
+	assert.Equal(t, ds2.indegree, 1)
+	assert.Equal(t, ds3.indegree, 1)
+	assert.Equal(t, ds4.indegree, 1)
+	assert.Equal(t, ds_all_play.indegree, 2)
+	assert.Equal(t, ds_left_join.indegree, 3)
 	assert.Equal(t, ds_left_join.prev[0], ds4)
 	assert.Equal(t, ds_left_join.prev[1], ds_all_play)
 	assert.Equal(t, ds_left_join.prev[2], ds3)

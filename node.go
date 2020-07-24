@@ -2,8 +2,6 @@ package godag
 
 import "time"
 
-const NodeID = "__nodeID__"
-
 type Node struct {
 	id         string // id should be unique
 	op         Op

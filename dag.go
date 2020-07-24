@@ -19,6 +19,7 @@ type Op interface {
 }
 
 type StateKey string
+const NodeID = "__nodeID__"
 
 type DAG struct {
 	startNode   *Node

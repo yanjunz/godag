@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"git.code.oa.com/video-fdmc/godag"
+	"github.com/yanjunz/godag"
 )
 
 type SimpleOp struct {

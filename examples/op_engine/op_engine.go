@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"time"
-	"git.code.oa.com/video-fdmc/godag"
+	"github.com/yanjunz/godag"
 )
 
 // 特征配置文件每一行会变成ConfItem

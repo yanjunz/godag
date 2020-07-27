@@ -1,4 +1,4 @@
-module git.code.oa.com/video-fdmc/godag
+module github.com/yanjunz/godag
 
 go 1.14
 
